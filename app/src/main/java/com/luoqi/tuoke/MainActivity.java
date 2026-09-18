@@ -25,8 +25,8 @@ public class MainActivity extends AppCompatActivity {
     private final Handler hb = new Handler(Looper.getMainLooper());
     private int curTab = 0;
 
-    // 心跳间隔 60s
-    private static final long HB_INTERVAL = 60_000L;
+    // 心跳间隔：官方返回 hg=600（秒），这里对齐 10 分钟
+    private static final long HB_INTERVAL = 600_000L;
     private final Runnable hbTask = new Runnable() {
         @Override
         public void run() {
