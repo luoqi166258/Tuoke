@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">拓客工具</string>
+    <string name="login_title">拓客工具</string>
+    <string name="login_hint_card">请输入卡密</string>
+    <string name="login_btn">登 录</string>
+    <string name="login_unbind">卡密解绑</string>
+    <string name="login_notice_title">公告</string>
+    <string name="login_notice_default">暂无公告通知</string>
+    <string name="tab_home">首页</string>
+    <string name="tab_func">功能</string>
+    <string name="tab_class">课堂</string>
+    <string name="tab_mine">我的</string>
+</resources>

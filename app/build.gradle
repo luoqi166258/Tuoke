@@ -1,0 +1,79 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.luoqi.tuoke'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.luoqi.tuoke"
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName "1.0.0"
+
+        // ---------- 泡椒云凭据注入 ----------
+        def localProps = new Properties()
+        def localPropsFile = rootProject.file('local.properties')
+        if (localPropsFile.exists()) {
+            localPropsFile.withInputStream { localProps.load(it) }
+        }
+        def pjKey = (localProps.getProperty('PAOJIAOYUN_APP_KEY')
+                ?: project.findProperty('PAOJIAOYUN_APP_KEY')
+                ?: System.getenv('PAOJIAOYUN_APP_KEY') ?: '').toString().trim()
+        def pjSecret = (localProps.getProperty('PAOJIAOYUN_APP_SECRET')
+                ?: project.findProperty('PAOJIAOYUN_APP_SECRET')
+                ?: System.getenv('PAOJIAOYUN_APP_SECRET') ?: '').toString().trim()
+
+        // AppSecret 混淆：反转 + 分片 + Base64（提高逆向门槛，非强加密）
+        def obfuscate = { String plain, int parts ->
+            if (plain == null || plain.isEmpty()) return []
+            def reversed = plain.reverse()
+            int len = reversed.length()
+            int chunk = (int) Math.ceil(len / (double) parts)
+            def out = []
+            for (int i = 0; i < len; i += chunk) {
+                int end = Math.min(i + chunk, len)
+                out << reversed.substring(i, end).getBytes('UTF-8')
+                        .encodeBase64().toString()
+            }
+            return out
+        }
+        def keyParts = obfuscate(pjKey, 3)
+        def secretParts = obfuscate(pjSecret, 5)
+        def toJavaArray = { List<String> arr ->
+            return "{ " + arr.collect { "\"${it}\"" }.join(", ") + " }"
+        }
+
+        buildConfigField "String[]", "PJ_KEY_PARTS", toJavaArray(keyParts)
+        buildConfigField "String[]", "PJ_SECRET_PARTS", toJavaArray(secretParts)
+    }
+
+    buildFeatures {
+        buildConfig true
+        viewBinding true
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    buildTypes {
+        debug {
+            minifyEnabled false
+        }
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.debug
+        }
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.11.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    implementation 'androidx.recyclerview:recyclerview:1.3.2'
+}
