@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 图标背景：深空蓝 -> 渐变底（不再是纯黑） -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:type="linear"
+                android:angle="135"
+                android:startColor="#0B1020"
+                android:centerColor="#102A52"
+                android:endColor="#12234A" />
+        </shape>
+    </item>
+</layer-list>

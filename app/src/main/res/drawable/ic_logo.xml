@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 登录页 Logo：渐变圆角底 + 白色品牌曲线 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="88dp"
+    android:height="88dp"
+    android:viewportWidth="88"
+    android:viewportHeight="88">
+
+    <!-- 圆角方形底：青绿 -> 天蓝 -> 紫 -->
+    <path android:pathData="M20,4 L68,4 A16,16 0 0 1 84,20 L84,68 A16,16 0 0 1 68,84 L20,84 A16,16 0 0 1 4,68 L4,20 A16,16 0 0 1 20,4 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="4"
+                android:startY="4"
+                android:endX="84"
+                android:endY="84">
+                <item android:offset="0" android:color="#00E5A0" />
+                <item android:offset="0.5" android:color="#00B0FF" />
+                <item android:offset="1" android:color="#7C4DFF" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- 白色上升曲线 -->
+    <path
+        android:pathData="M24,58 L38,44 L48,52 L66,32"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="6"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+
+    <!-- 右上箭头头 -->
+    <path
+        android:pathData="M58,26 L68,26 L68,36"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="6"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+
+    <!-- 节点圆点 -->
+    <path
+        android:pathData="M38,44 m-3,0 a3,3 0 1,0 6,0 a3,3 0 1,0 -6,0"
+        android:fillColor="#FFFFFF" />
+</vector>

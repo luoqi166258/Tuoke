@@ -1,17 +1,51 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- 箭头向外扩散：寓意“引流拓客” -->
+
+    <!-- 中心上升折线（拓客增长曲线）：青绿 -> 天蓝渐变 -->
     <path
-        android:fillColor="#00C853"
-        android:pathData="M54,34 L54,74 M54,34 L44,44 M54,34 L64,44" />
+        android:pathData="M34,70 L46,56 L56,64 L74,42"
+        android:strokeWidth="7"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round">
+        <aapt:attr name="android:strokeColor">
+            <gradient
+                android:type="linear"
+                android:startX="34"
+                android:startY="70"
+                android:endX="74"
+                android:endY="42">
+                <item android:offset="0" android:color="#00E5A0" />
+                <item android:offset="1" android:color="#00B0FF" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- 曲线上的节点圆点 -->
     <path
-        android:fillColor="#00C853"
-        android:pathData="M30,58 L30,80 M30,58 L24,64 M30,58 L36,64" />
+        android:pathData="M46,56 m-3.5,0 a3.5,3.5 0 1,0 7,0 a3.5,3.5 0 1,0 -7,0"
+        android:fillColor="#FFFFFF" />
+
+    <!-- 右上角箭头头（指向右上，寓意引流拓客）：天蓝 -> 紫渐变 -->
     <path
-        android:fillColor="#00C853"
-        android:pathData="M78,58 L78,80 M78,58 L72,64 M78,58 L84,64" />
+        android:pathData="M66,34 L78,34 L78,46"
+        android:strokeWidth="7"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round">
+        <aapt:attr name="android:strokeColor">
+            <gradient
+                android:type="linear"
+                android:startX="66"
+                android:startY="34"
+                android:endX="78"
+                android:endY="46">
+                <item android:offset="0" android:color="#00B0FF" />
+                <item android:offset="1" android:color="#7C4DFF" />
+            </gradient>
+        </aapt:attr>
+    </path>
 </vector>

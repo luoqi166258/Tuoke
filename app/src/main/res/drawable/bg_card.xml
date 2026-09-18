@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 公告卡片：半透明玻璃底 + 细描边 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#1AFFFFFF" />
+    <corners android:radius="16dp" />
+    <stroke
+        android:width="1dp"
+        android:color="#2A8FB8FF" />
+</shape>

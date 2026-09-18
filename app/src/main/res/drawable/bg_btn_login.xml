@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 登录按钮：青绿 -> 天蓝 渐变，按下态变暗，禁用态灰度 -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item android:state_pressed="true">
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="0"
+                android:startColor="#00B37D"
+                android:endColor="#0088CC" />
+            <corners android:radius="14dp" />
+        </shape>
+    </item>
+
+    <item android:state_enabled="false">
+        <shape android:shape="rectangle">
+            <solid android:color="#33FFFFFF" />
+            <corners android:radius="14dp" />
+        </shape>
+    </item>
+
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="0"
+                android:startColor="#00E5A0"
+                android:endColor="#00B0FF" />
+            <corners android:radius="14dp" />
+        </shape>
+    </item>
+</selector>
