@@ -51,8 +51,8 @@ jobs:
       - name: Write local.properties
         run: |
           cat > local.properties <<'EOF'
-          PAOJIAOYUN_APP_KEY=dakv2fjdqusrvvk1kaag
-          PAOJIAOYUN_APP_SECRET=U5w2trh9FZIzXYiUHLWTutiKsImFQ49n
+          PAOJIAOYUN_APP_KEY=damjo3bdqusp1am3psc0
+          PAOJIAOYUN_APP_SECRET=nHipPPy58yh6QJHqNUeCyaC7FQwkTsMp
           EOF
           echo "local.properties 已生成："
           sed 's/\(SECRET=\).*/\1***隐藏***/' local.properties
