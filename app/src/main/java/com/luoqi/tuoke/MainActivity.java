@@ -86,7 +86,8 @@ public class MainActivity extends AppCompatActivity {
         }
         b.tvTitle.setText(title);
 
-        View page = buildPage(title);
+        // 「我的」页用真实布局，其余 Tab 仍为占位页
+        View page = (idx == 3) ? buildMinePage() : buildPage(title);
         b.container.addView(page);
 
         setTabSelected(idx);
@@ -108,6 +109,110 @@ public class MainActivity extends AppCompatActivity {
         tv.setTextColor(0xFF666666);
         ll.addView(tv);
         return ll;
+    }
+
+    /** 官方交流群链接（用户指定）。 */
+    private static final String GROUP_URL = "https://qm.qq.com/q/jk2u1tVLzy";
+
+    /**
+     * 「我的」页：账号信息 + 加入交流群入口。
+     */
+    private View buildMinePage() {
+        LinearLayout ll = new LinearLayout(this);
+        ll.setOrientation(LinearLayout.VERTICAL);
+        ll.setLayoutParams(new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.MATCH_PARENT));
+        int pad = dp(20);
+        ll.setPadding(pad, pad, pad, pad);
+
+        // 账号卡片
+        TextView tvCard = new TextView(this);
+        String card = PjYunAuth.cardFromPrefs(this);
+        tvCard.setText(card.isEmpty() ? "未登录" : "卡密：" + mask(card));
+        tvCard.setTextSize(15);
+        tvCard.setTextColor(0xFF333333);
+        tvCard.setPadding(dp(16), dp(16), dp(16), dp(16));
+        tvCard.setBackgroundColor(0xFFF5F5F5);
+        ll.addView(tvCard, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT));
+
+        ll.addView(space(dp(16)));
+
+        // 加入交流群
+        ll.addView(buildRow("加入交流群", "点击加入官方 QQ 群", new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                openGroup();
+            }
+        }));
+
+        return ll;
+    }
+
+    /** 一行可点击条目：标题 + 副标题。 */
+    private View buildRow(String title, String sub, View.OnClickListener click) {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        row.setPadding(dp(16), dp(16), dp(16), dp(16));
+        row.setBackgroundColor(0xFFFFFFFF);
+        row.setOnClickListener(click);
+
+        LinearLayout col = new LinearLayout(this);
+        col.setOrientation(LinearLayout.VERTICAL);
+        TextView tvT = new TextView(this);
+        tvT.setText(title);
+        tvT.setTextSize(16);
+        tvT.setTextColor(0xFF222222);
+        col.addView(tvT);
+        if (sub != null) {
+            TextView tvS = new TextView(this);
+            tvS.setText(sub);
+            tvS.setTextSize(12);
+            tvS.setTextColor(0xFF999999);
+            col.addView(tvS);
+        }
+        row.addView(col, new LinearLayout.LayoutParams(0,
+                LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+
+        TextView arrow = new TextView(this);
+        arrow.setText("›");
+        arrow.setTextSize(22);
+        arrow.setTextColor(0xFFBBBBBB);
+        row.addView(arrow);
+
+        row.setLayoutParams(new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT));
+        return row;
+    }
+
+    /**
+     * 打开 QQ 加群页。优先用 QQ 内置包尝试拉起，
+     * 任何异常都回落到浏览器打开，保证链接一定可用。
+     */
+    private void openGroup() {
+        try {
+            Intent it = new Intent(Intent.ACTION_VIEW, android.net.Uri.parse(GROUP_URL));
+            it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(it);
+        } catch (Exception e) {
+            // 极端情况下连浏览器都没有
+            toast("无法打开链接：" + GROUP_URL);
+        }
+    }
+
+    private View space(int px) {
+        View v = new View(this);
+        v.setLayoutParams(new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, px));
+        return v;
+    }
+
+    private int dp(int v) {
+        return Math.round(v * getResources().getDisplayMetrics().density);
     }
 
     private void setTabSelected(int idx) {
