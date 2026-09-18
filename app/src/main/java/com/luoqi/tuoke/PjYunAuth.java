@@ -96,28 +96,63 @@ public class PjYunAuth {
     }
 
     // ---------------- 网络请求 ----------------
-    private static JSONObject post(String path, String body) throws Exception {
-        HttpURLConnection conn = (HttpURLConnection) new URL(BASE + path).openConnection();
-        conn.setRequestMethod("POST");
-        conn.setConnectTimeout(10000);
-        conn.setReadTimeout(10000);
-        conn.setDoOutput(true);
-        conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-        try (OutputStream os = conn.getOutputStream()) {
-            os.write(body.getBytes(StandardCharsets.UTF_8));
+
+    /**
+     * 发起 POST 并解析 JSON。
+     *
+     * 注意：本方法<b>不对外抛受检异常</b>。原因是调用方全部位于
+     * {@link #runAsync} 的 {@link Runnable} lambda 内，而 Runnable#run()
+     * 不允许抛受检异常。所有 IO 异常在这里被就地转换为带 __error 字段的
+     * JSONObject，由上层统一走 onFail 分支。
+     *
+     * 返回体约定：
+     *   - 正常：泡椒云原始 JSON + {"__http": <状态码>}
+     *   - 异常：{"__http": -1, "__error": "<原因>"}
+     */
+    private static JSONObject post(String path, String body) {
+        HttpURLConnection conn = null;
+        try {
+            conn = (HttpURLConnection) new URL(BASE + path).openConnection();
+            conn.setRequestMethod("POST");
+            conn.setConnectTimeout(10000);
+            conn.setReadTimeout(10000);
+            conn.setDoOutput(true);
+            conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+            try (OutputStream os = conn.getOutputStream()) {
+                os.write(body.getBytes(StandardCharsets.UTF_8));
+            }
+            int code = conn.getResponseCode();
+            java.io.InputStream in = (code >= 200 && code < 300)
+                    ? conn.getInputStream() : conn.getErrorStream();
+            StringBuilder sb = new StringBuilder();
+            if (in != null) {
+                try (BufferedReader br = new BufferedReader(
+                        new InputStreamReader(in, StandardCharsets.UTF_8))) {
+                    String line;
+                    while ((line = br.readLine()) != null) sb.append(line);
+                }
+            }
+            String raw = sb.toString();
+            JSONObject obj;
+            if (raw == null || raw.trim().isEmpty()) {
+                obj = new JSONObject();
+            } else {
+                obj = new JSONObject(raw);
+            }
+            obj.put("__http", code);
+            return obj;
+        } catch (Exception e) {
+            JSONObject obj = new JSONObject();
+            try {
+                obj.put("__http", -1);
+                obj.put("__error", e.getMessage() == null ? "网络异常" : e.getMessage());
+            } catch (Exception ignored) {
+                // JSONObject.put 仅抛 JSONException，此处不可能触发
+            }
+            return obj;
+        } finally {
+            if (conn != null) conn.disconnect();
         }
-        int code = conn.getResponseCode();
-        StringBuilder sb = new StringBuilder();
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(
-                code >= 200 && code < 300 ? conn.getInputStream() : conn.getErrorStream(),
-                StandardCharsets.UTF_8))) {
-            String line;
-            while ((line = br.readLine()) != null) sb.append(line);
-        }
-        String raw = sb.toString();
-        JSONObject obj = new JSONObject(raw);
-        obj.put("__http", code);
-        return obj;
     }
 
     private static String enc(String s) {
@@ -150,6 +185,8 @@ public class PjYunAuth {
                     + "&card=" + enc(card);
             final JSONObject r = post(PATH_LOGIN, body);
             MAIN.post(() -> {
+                String err = r.optString("__error", "");
+                if (!err.isEmpty()) { cb.onFail(err); return; }
                 int http = r.optInt("__http", -1);
                 int ret = r.optInt("code", r.optInt("status", -1));
                 if (http == 200 && (ret == 0 || ret == 200)) {
@@ -177,6 +214,8 @@ public class PjYunAuth {
                     + "&token=" + enc(tokenFromPrefs(app));
             final JSONObject r = post(PATH_HEARTBEAT, body);
             MAIN.post(() -> {
+                String err = r.optString("__error", "");
+                if (!err.isEmpty()) { cb.onFail(err); return; }
                 int ret = r.optInt("code", r.optInt("status", -1));
                 if (ret == 0 || ret == 200) cb.onOk(r);
                 else cb.onFail(r.optString("msg", "心跳失败"));
@@ -196,6 +235,8 @@ public class PjYunAuth {
             final JSONObject r = post(PATH_LOGOUT, body);
             MAIN.post(() -> {
                 clearCard(app);
+                String err = r.optString("__error", "");
+                if (!err.isEmpty()) { cb.onFail("已本地解绑（" + err + "）"); return; }
                 int ret = r.optInt("code", r.optInt("status", -1));
                 if (ret == 0 || ret == 200) cb.onOk(r);
                 else cb.onFail(r.optString("msg", "解绑完成"));
