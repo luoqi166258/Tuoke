@@ -49,15 +49,24 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
       # ---------- 5. 写入 local.properties（泡椒云凭据）----------
       - name: Write local.properties
+        env:
+          PJ_KEY: ${{ secrets.PAOJIAOYUN_APP_KEY }}
+          PJ_SECRET: ${{ secrets.PAOJIAOYUN_APP_SECRET }}
         run: |
-          cat > local.properties <<'EOF'
-          PAOJIAOYUN_APP_KEY=damjo3bdqusp1am3psc0
-          PAOJIAOYUN_APP_SECRET=nHipPPy58yh6QJHqNUeCyaC7FQwkTsMp
+          KEY="${PJ_KEY:-damjo3bdqusp1am3psc0}"
+          SECRET="${PJ_SECRET:-nHipPPy58yh6QJHqNUeCyaC7FQwkTsMp}"
+          cat > local.properties <<EOF
+          PAOJIAOYUN_APP_KEY=${KEY}
+          PAOJIAOYUN_APP_SECRET=${SECRET}
           EOF
           echo "local.properties 已生成："
+          echo "  APP_KEY 长度 = ${#KEY}"
+          echo "  SECRET 长度 = ${#SECRET}"
           sed 's/\(SECRET=\).*/\1***隐藏***/' local.properties
       # ---------- 6. 编译 ----------
       - name: Build debug APK
+        env:
+          TAG_NAME: ${{ github.ref_name }}
         run: gradle assembleDebug --no-daemon --stacktrace
       # ---------- 7. 上传产物 ----------
       - name: Upload APK artifact

@@ -10,8 +10,31 @@ android {
         applicationId "com.luoqi.tuoke"
         minSdk 24
         targetSdk 34
-        versionCode 1
-        versionName "1.0.0"
+        // ---------- 版本号自动跟随 Git tag ----------
+        // 优先读取 CI 注入的环境变量(TAG_NAME)，其次读本地 git describe，兜底 1.0.0
+        def rawTag = System.getenv('TAG_NAME')
+        if (rawTag == null || rawTag.trim().isEmpty()) {
+            try {
+                def p = new ByteArrayOutputStream()
+                exec {
+                    commandLine 'git', 'describe', '--tags', '--abbrev=0'
+                    standardOutput = p
+                }
+                rawTag = p.toString().trim()
+            } catch (Throwable ignored) {
+                rawTag = 'v1.0.0'
+            }
+        }
+        // 去掉前缀 v，拆成 主.次.修 三段
+        def verName = rawTag.replaceAll('^v', '').trim()
+        if (!verName.matches('\\d+(\\.\\d+){0,3}')) verName = '1.0.0'
+        def verSegs = verName.tokenize('.').collect { it.isInteger() ? it.toInteger() : 0 }
+        while (verSegs.size() < 3) verSegs << 0
+        // versionCode = 主*10000 + 次*100 + 修（保证递增）
+        def verCode = verSegs[0] * 10000 + verSegs[1] * 100 + verSegs[2]
+        versionCode verCode
+        versionName verName
+        println "==> Tuoke 版本号: tag=${rawTag} versionName=${verName} versionCode=${verCode}"
 
         // ---------- 泡椒云凭据注入 ----------
         def localProps = new Properties()
