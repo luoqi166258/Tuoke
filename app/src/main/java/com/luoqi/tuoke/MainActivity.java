@@ -86,11 +86,22 @@ public class MainActivity extends AppCompatActivity {
         }
         b.tvTitle.setText(title);
 
-        // 「我的」页用真实布局，其余 Tab 仍为占位页
-        View page = (idx == 3) ? buildMinePage() : buildPage(title);
+        // 各 Tab 分发到独立页面构建器
+        View page;
+        switch (idx) {
+            case 0: page = HomePage.build(this, () -> switchTab(1)); break;
+            case 1: page = FuncPage.build(this); break;
+            case 2: page = ClassPage.build(this); break;
+            default: page = buildMinePage(); break;
+        }
         b.container.addView(page);
 
         setTabSelected(idx);
+    }
+
+    /** 供子页面（如功能页执行完任务后）刷新当前 Tab 内容。 */
+    public void refreshCurrentTab() {
+        switchTab(curTab);
     }
 
     /** 先给一个占位页，后续各平台功能模块替换进来。 */

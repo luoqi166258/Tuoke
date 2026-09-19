@@ -11,4 +11,13 @@
     <string name="tab_func">功能</string>
     <string name="tab_class">课堂</string>
     <string name="tab_mine">我的</string>
+
+    <string name="acc_service_desc">拓客工具无障碍服务：用于在获客平台中辅助执行采集、互动等任务。开启后可在目标 App 内自动完成点击与输入。</string>
+    <string name="acc_enable_btn">开启无障碍服务</string>
+    <string name="func_platform">选择平台</string>
+    <string name="func_keyword_hint">输入关键词（如：祛痘）</string>
+    <string name="func_count">目标条数</string>
+    <string name="func_start">开始任务</string>
+    <string name="func_log">任务日志</string>
+    <string name="func_log_empty">暂无日志，执行任务后在此查看</string>
 </resources>
