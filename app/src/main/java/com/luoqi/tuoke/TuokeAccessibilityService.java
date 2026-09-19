@@ -1,98 +1,231 @@
 package com.luoqi.tuoke;
 
 import android.accessibilityservice.AccessibilityService;
-import android.accessibilityservice.AccessibilityServiceInfo;
+import android.os.Build;
 import android.view.accessibility.AccessibilityEvent;
+import android.view.accessibility.AccessibilityNodeInfo;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 /**
- * 拓客无障碍服务：自动化任务的核心执行入口。
- *
- * 职责：
- *  1. 维护服务连接状态（供界面判断是否已开启无障碍）
- *  2. 对外提供当前前台包名、节点查找、点击等基础原子能力
- *  3. 维护最近任务日志（供「首页」展示）
- *
- * 注意：本类只提供“原子能力”，具体平台（抖音/快手…）的自动化
- * 流程由各任务类调用这些原子能力实现，职责清晰、便于逐个接入。
+ * 拓客无障碍服务：提供自动化所需的基础原子能力。
+ * 所有业务动作（采集/私信/关注等）统一经由本服务提供的原子能力完成。
  */
 public class TuokeAccessibilityService extends AccessibilityService {
 
-    private static volatile TuokeAccessibilityService instance;
+    private static volatile TuokeAccessibilityService INSTANCE;
+    private static final List<String> LOGS = Collections.synchronizedList(new ArrayList<String>());
+    private static final int MAX_LOGS = 200;
 
-    /** 最近任务日志（内存，最多保留 100 条）。 */
-    private static final List<String> LOGS = Collections.synchronizedList(new ArrayList<>());
+    private volatile boolean aborted = false;
 
-    public static TuokeAccessibilityService get() { return instance; }
+    public static TuokeAccessibilityService get() { return INSTANCE; }
 
-    /** 无障碍服务是否已连接。 */
-    public static boolean isReady() { return instance != null; }
+    public static boolean isReady() { return INSTANCE != null; }
 
-    public static void log(String line) {
-        synchronized (LOGS) {
-            LOGS.add(0, line);
-            while (LOGS.size() > 100) LOGS.remove(LOGS.size() - 1);
-        }
+    public static void log(String s) {
+        if (s == null) return;
+        LOGS.add(s);
+        while (LOGS.size() > MAX_LOGS) LOGS.remove(0);
     }
 
-    public static List<String> logs() {
-        synchronized (LOGS) {
-            return new ArrayList<>(LOGS);
-        }
-    }
+    public static List<String> logs() { return new ArrayList<>(LOGS); }
 
-    public static void clearLogs() {
-        synchronized (LOGS) { LOGS.clear(); }
-    }
+    public static void clearLogs() { LOGS.clear(); }
+
+    public static int sdkInt() { return Build.VERSION.SDK_INT; }
+
+    public void resetAbort() { aborted = false; }
+
+    public void abort() { aborted = true; log("已请求中止任务"); }
+
+    public boolean isAborted() { return aborted; }
 
     @Override
     protected void onServiceConnected() {
         super.onServiceConnected();
-        instance = this;
-        // 配置：监听包/窗口变化 + 内容变化，便于任务实时感知界面
-        AccessibilityServiceInfo info = getServiceInfo();
-        if (info == null) info = new AccessibilityServiceInfo();
-        info.eventTypes = AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED
-                | AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED
-                | AccessibilityEvent.TYPE_VIEW_CLICKED
-                | AccessibilityEvent.TYPE_VIEW_SCROLLED;
-        info.feedbackType = AccessibilityServiceInfo.FEEDBACK_GENERIC;
-        info.flags = AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS
-                | AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS;
-        info.notificationTimeout = 100;
-        setServiceInfo(info);
+        INSTANCE = this;
         log("无障碍服务已连接");
     }
 
     @Override
-    public void onAccessibilityEvent(AccessibilityEvent event) {
-        // 事件级能力保留给后续任务实现（例如监听页面变化、触发下一步）
-    }
+    public void onAccessibilityEvent(AccessibilityEvent event) { }
 
     @Override
-    public void onInterrupt() {
-    }
+    public void onInterrupt() { }
 
     @Override
     public boolean onUnbind(android.content.Intent intent) {
-        instance = null;
+        INSTANCE = null;
         log("无障碍服务已断开");
         return super.onUnbind(intent);
     }
 
-    /** 当前前台包名（拿不到返回空串）。 */
+    /** 当前前台应用包名。 */
     public String foregroundPackage() {
         try {
-            android.view.accessibility.AccessibilityWindowInfo w = getWindows().isEmpty()
-                    ? null : getWindows().get(0);
-            if (w != null && w.getRoot() != null && w.getRoot().getPackageName() != null) {
-                return String.valueOf(w.getRoot().getPackageName());
-            }
-        } catch (Throwable ignored) {
+            AccessibilityNodeInfo r = root();
+            if (r == null) return "";
+            CharSequence p = r.getPackageName();
+            return p == null ? "" : p.toString();
+        } catch (Throwable t) {
+            return "";
         }
-        return "";
+    }
+
+    /** 获取活动窗口根节点（多窗口兜底）。 */
+    public AccessibilityNodeInfo root() {
+        try {
+            AccessibilityNodeInfo r = getRootInActiveWindow();
+            if (r != null) return r;
+            List<android.view.accessibility.AccessibilityWindowInfo> ws = getWindows();
+            if (ws != null) {
+                for (android.view.accessibility.AccessibilityWindowInfo w : ws) {
+                    if (w == null) continue;
+                    AccessibilityNodeInfo n = w.getRoot();
+                    if (n != null) return n;
+                }
+            }
+        } catch (Throwable t) { }
+        return null;
+    }
+
+    /** 按可见文本查找节点。 */
+    public AccessibilityNodeInfo findByText(String text) {
+        if (text == null) return null;
+        AccessibilityNodeInfo r = root();
+        if (r == null) return null;
+        try {
+            List<AccessibilityNodeInfo> list = r.findAccessibilityNodeInfosByText(text);
+            if (list != null) {
+                for (AccessibilityNodeInfo n : list) {
+                    if (n != null && n.isVisibleToUser()) return n;
+                }
+                if (!list.isEmpty()) return list.get(0);
+            }
+        } catch (Throwable t) { }
+        return null;
+    }
+
+    /** 按 viewId 查找节点。 */
+    public AccessibilityNodeInfo findById(String viewId) {
+        if (viewId == null) return null;
+        AccessibilityNodeInfo r = root();
+        if (r == null) return null;
+        try {
+            List<AccessibilityNodeInfo> list = r.findAccessibilityNodeInfosByViewId(viewId);
+            if (list != null) {
+                for (AccessibilityNodeInfo n : list) {
+                    if (n != null && n.isVisibleToUser()) return n;
+                }
+                if (!list.isEmpty()) return list.get(0);
+            }
+        } catch (Throwable t) { }
+        return null;
+    }
+
+    /** 向上寻找最近的可点击祖先。 */
+    public AccessibilityNodeInfo clickableAncestor(AccessibilityNodeInfo n) {
+        AccessibilityNodeInfo cur = n;
+        int depth = 0;
+        while (cur != null && depth < 12) {
+            if (cur.isClickable()) return cur;
+            cur = cur.getParent();
+            depth++;
+        }
+        return n;
+    }
+
+    /** 点击节点（自动找可点击祖先）。 */
+    public boolean clickNode(AccessibilityNodeInfo n) {
+        if (n == null) return false;
+        AccessibilityNodeInfo t = clickableAncestor(n);
+        try {
+            if (t != null && t.isClickable()) return t.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+            if (n.isClickable()) return n.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+        } catch (Throwable e) { }
+        return false;
+    }
+
+    /** 按文本点击。 */
+    public boolean clickText(String text) {
+        AccessibilityNodeInfo n = findByText(text);
+        boolean ok = clickNode(n);
+        if (ok) log("点击文本：" + text);
+        return ok;
+    }
+
+    /** 按 viewId 点击。 */
+    public boolean clickId(String viewId) {
+        AccessibilityNodeInfo n = findById(viewId);
+        boolean ok = clickNode(n);
+        if (ok) log("点击控件：" + viewId);
+        return ok;
+    }
+
+    /** 向输入框写入文本。 */
+    public boolean setText(AccessibilityNodeInfo n, String text) {
+        if (n == null) return false;
+        try {
+            if (!n.isEditable()) {
+                AccessibilityNodeInfo p = n.getParent();
+                if (p != null && p.isEditable()) n = p;
+            }
+            android.os.Bundle b = new android.os.Bundle();
+            b.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, text == null ? "" : text);
+            return n.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, b);
+        } catch (Throwable t) { }
+        return false;
+    }
+
+    /** 全局返回。 */
+    public boolean back() { return performGlobalAction(GLOBAL_ACTION_BACK); }
+
+    /** 回到桌面。 */
+    public boolean home() { return performGlobalAction(GLOBAL_ACTION_HOME); }
+
+    /** 向前滚动。 */
+    public boolean scrollForward(AccessibilityNodeInfo n) {
+        if (n == null) return false;
+        try {
+            return n.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD);
+        } catch (Throwable t) { }
+        return false;
+    }
+
+    /** 找到最深的可滚动节点。 */
+    public AccessibilityNodeInfo deepestScrollable(AccessibilityNodeInfo root) {
+        if (root == null) return null;
+        AccessibilityNodeInfo found = null;
+        try {
+            List<AccessibilityNodeInfo> queue = new ArrayList<>();
+            queue.add(root);
+            while (!queue.isEmpty()) {
+                AccessibilityNodeInfo cur = queue.remove(0);
+                if (cur == null) continue;
+                if (cur.isScrollable() && cur.isVisibleToUser()) found = cur;
+                for (int i = 0; i < cur.getChildCount(); i++) {
+                    AccessibilityNodeInfo c = cur.getChild(i);
+                    if (c != null) queue.add(c);
+                }
+            }
+        } catch (Throwable t) { }
+        return found;
+    }
+
+    /** 递归收集节点下的文本。 */
+    public void collectTexts(AccessibilityNodeInfo n, List<String> out) {
+        if (n == null || out == null) return;
+        try {
+            CharSequence t = n.getText();
+            if (t != null && t.length() > 0) out.add(t.toString().trim());
+            CharSequence d = n.getContentDescription();
+            if (d != null && d.length() > 0) out.add(d.toString().trim());
+            for (int i = 0; i < n.getChildCount(); i++) {
+                collectTexts(n.getChild(i), out);
+            }
+        } catch (Throwable e) { }
     }
 }
