@@ -40,6 +40,8 @@ public final class TaskRunner {
     public interface Cb {
         void onLog(String line);
         void onDone(boolean ok, String msg);
+        /** 采集结果（仅采集类动作会回调，默认空实现）。 */
+        default void onItems(java.util.List<String> items) { }
     }
 
     /**
@@ -123,6 +125,7 @@ public final class TaskRunner {
                     TaskStore.recordRun(ctx, true, collected);
                     String msg = "抖音采集完成：共 " + collected + " 条";
                     cb.onLog("[" + now() + "] " + msg);
+                    cb.onItems(items);
                     cb.onDone(true, msg);
                 });
             }

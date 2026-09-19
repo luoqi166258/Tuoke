@@ -110,6 +110,17 @@ final class FuncPage {
                 + "条数为本次任务的上限。"));
         root.addView(kCard);
 
+        // ── 3.5 采集结果 ──
+        LinearLayout rCard = UiKit.card(a);
+        rCard.addView(UiKit.title(a, "采集结果"));
+        rCard.addView(UiKit.space(a, 10));
+        final TextView tvResult = new TextView(a);
+        tvResult.setTextSize(13);
+        tvResult.setTextColor(0xFF999999);
+        tvResult.setLineSpacing(UiKit.dp(a, 3), 1f);
+        tvResult.setText("暂无采集结果，执行采集任务后在此查看");
+        rCard.addView(tvResult);
+        root.addView(rCard);
         // ── 4. 日志 ──
         LinearLayout lCard = UiKit.card(a);
         lCard.addView(UiKit.title(a, "任务日志"));
@@ -144,6 +155,19 @@ final class FuncPage {
                         TaskRunner.run(a, platform, action, kw, cnt, new TaskRunner.Cb() {
                             @Override public void onLog(String line) {
                                 refreshLog(tvLog);
+                            }
+                            @Override public void onItems(java.util.List<String> items) {
+                                if (items == null || items.isEmpty()) {
+                                    tvResult.setText("未采集到结果");
+                                    tvResult.setTextColor(0xFF999999);
+                                    return;
+                                }
+                                StringBuilder sb = new StringBuilder();
+                                for (int i = 0; i < items.size(); i++) {
+                                    sb.append(i + 1).append(". ").append(items.get(i)).append('\n');
+                                }
+                                tvResult.setTextColor(0xFF333333);
+                                tvResult.setText(sb.toString().trim());
                             }
                             @Override public void onDone(boolean ok, String msg) {
                                 refreshLog(tvLog);
