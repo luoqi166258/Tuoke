@@ -53,8 +53,8 @@ jobs:
           PJ_KEY: ${{ secrets.PAOJIAOYUN_APP_KEY }}
           PJ_SECRET: ${{ secrets.PAOJIAOYUN_APP_SECRET }}
         run: |
-          KEY="${PJ_KEY:-dakv2fjdqusrvvk1kaag}"
-          SECRET="${PJ_SECRET:-U5w2trh9FZIzXYiUHLWTutiKsImFQ49n}"
+          KEY="${PJ_KEY:-damjo3bdqusp1am3psc0}"
+          SECRET="${PJ_SECRET:-nHipPPy58yh6QJHqNUeCyaC7FQwkTsMp}"
           cat > local.properties <<EOF
           PAOJIAOYUN_APP_KEY=${KEY}
           PAOJIAOYUN_APP_SECRET=${SECRET}

@@ -24,6 +24,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Base64;
 
 /**
  * 泡椒云网络验证对接（严格对齐官方文档 http://docs.paojiaoyun.com/）。
@@ -441,8 +442,19 @@ public final class PjYunAuth {
 
     private static String joinParts(String[] parts) {
         if (parts == null || parts.length == 0) return "";
+        // 分片在 build.gradle 中经 base64(reverse(plain)) 逐段编码，
+        // 此处必须先对每片做 Base64 解码，再拼接、再整体反转，才能还原明文。
         StringBuilder sb = new StringBuilder();
-        for (String p : parts) sb.append(p == null ? "" : p);
+        for (String p : parts) {
+            if (p == null || p.isEmpty()) continue;
+            try {
+                byte[] raw = Base64.decode(p, Base64.DEFAULT);
+                sb.append(new String(raw, StandardCharsets.UTF_8));
+            } catch (Throwable t) {
+                // 容错：若某片不是合法 Base64（例如手工注入明文分片），按原样使用
+                sb.append(p);
+            }
+        }
         return new StringBuilder(sb.toString()).reverse().toString();
     }
 }
